@@ -1,13 +1,3 @@
--- Name: <Xi Lin>
--- Email: <Xi.Lin-6@student.uts.edu.au>
--- Student Number: <26028098>
--- Project: Food Delivery Database
--- Website: https://www.ubereats.com
--- Description:
--- This database is a food delivery platform simulation with entities including users, 
--- order, order_info, restaurants, couriers, payments, menu and address.
-
-
 DROP TABLE IF EXISTS payment CASCADE;
 DROP TABLE IF EXISTS order_item CASCADE;
 DROP TABLE IF EXISTS order_info CASCADE;
