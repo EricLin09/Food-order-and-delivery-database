@@ -1,0 +1,346 @@
+-- Name: <Xi Lin>
+-- Email: <Xi.Lin-6@student.uts.edu.au>
+-- Student Number: <26028098>
+-- Project: Food Delivery Database
+-- Website: https://www.ubereats.com
+-- Description:
+-- This database is a food delivery platform simulation with entities including users, 
+-- order, order_info, restaurants, couriers, payments, menu and address.
+
+
+DROP TABLE IF EXISTS payment CASCADE;
+DROP TABLE IF EXISTS order_item CASCADE;
+DROP TABLE IF EXISTS order_info CASCADE;
+DROP TABLE IF EXISTS menu_item CASCADE;
+DROP TABLE IF EXISTS restaurant CASCADE;
+DROP TABLE IF EXISTS address CASCADE;
+DROP TABLE IF EXISTS courier CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+CREATE TABLE users (
+  user_id SERIAL PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE address (
+  address_id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+  line1 TEXT NOT NULL,
+  suburb TEXT NOT NULL,
+  postcode TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('NSW','VIC','QLD','SA','WA','TAS','NT','ACT'))
+);
+
+CREATE TABLE restaurant (
+  restaurant_id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  address_id INT REFERENCES address(address_id),
+  star NUMERIC(2,1) NOT NULL CHECK (star >= 1 AND star <= 5)
+);
+
+CREATE TABLE menu_item (
+  menu_item_id SERIAL PRIMARY KEY,
+  restaurant_id INT NOT NULL REFERENCES restaurant(restaurant_id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  price NUMERIC(7,2) NOT NULL CHECK (price > 0)
+);
+
+CREATE TABLE courier (
+  courier_id SERIAL PRIMARY KEY,
+  full_name VARCHAR(100) NOT NULL,
+  vehicle_type VARCHAR(20) NOT NULL CHECK (vehicle_type IN ('bicycle','scooter','car'))
+);
+
+CREATE TABLE order_info (
+  order_id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
+  restaurant_id INT NOT NULL REFERENCES restaurant(restaurant_id) ON DELETE RESTRICT,
+  courier_id INT REFERENCES courier(courier_id) ON DELETE SET NULL,
+  order_status TEXT NOT NULL CHECK (order_status IN ('placed','preparing','pickup','delivering','delivered','cancelled')),
+  order_time TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE order_item (
+  order_info_id INT NOT NULL CONSTRAINT fk_orderitem_order REFERENCES order_info(order_id) ON DELETE CASCADE,
+  menu_item_id INT NOT NULL CONSTRAINT fk_orderitem_menuitem REFERENCES menu_item(menu_item_id) ON DELETE RESTRICT,
+  qty INT NOT NULL CONSTRAINT chk_orderitem_qty CHECK (qty > 0),
+  item_price NUMERIC(7,2) NOT NULL CONSTRAINT chk_orderitem_price CHECK (item_price > 0),
+  CONSTRAINT pk_order_item PRIMARY KEY (order_info_id, menu_item_id)
+);
+
+CREATE TABLE payment (
+  payment_id SERIAL PRIMARY KEY,
+  order_info_id INT UNIQUE NOT NULL REFERENCES order_info(order_id) ON DELETE CASCADE,
+  method TEXT NOT NULL CHECK (method IN ('card','apple_pay','google_pay','paypal')),
+  amount NUMERIC(7,2) NOT NULL CHECK (amount >= 0)
+);
+
+
+
+INSERT INTO users (full_name, email, phone) VALUES
+('Alice','alice@gmail.com','07730412356'),
+('Ben','ben@outlook.com','0498765432'),
+('Eric','23274940172@qq.com','613246763710'),
+('Sarah','sarah@gmail.com','0412987654'),
+('Michael','michael@outlook.com','0487123456'),
+('Emma','843922648@yahoo.com','6123456789'),
+('David','d258258456@gmail.com','0756789123'),
+('Sophie','sophie@114514.com','0034567891'),
+('James','james@gmail.com','12367891234'),
+('Olivia','olivia@outlook.com','445678912'),
+('Lucas','lucas@gmail.com','77478912345'),
+('Chloe','chloe@yahoo.com','61489123456'),
+('Ryan','ryan@gmail.com','2401234567');
+
+
+INSERT INTO address (user_id, line1, suburb, postcode, state) VALUES
+(1,'1 UTS Tower','Ultimo','2007','NSW'),
+(2,'99 Harris St','Pyrmont','2009','NSW'),
+(3,'98 Harris St','Pyrmont','2009','NSW'),
+(4,'45 George St','Sydney','2000','NSW'),
+(5,'12 Pitt St','Haymarket','2000','NSW'),
+(6,'78 Kent St','Millers Point','2000','NSW'),
+(7,'23 Sussex St','Barangaroo','2000','NSW'),
+(8,'156 Clarence St','Sydney','2000','NSW'),
+(9,'67 York St','Sydney','2000','NSW'),
+(10,'34 Market St','Sydney','2000','NSW'),
+(11,'89 Elizabeth St','Surry Hills','2010','NSW'),
+(12,'42 Crown St','Darlinghurst','2010','NSW'),
+(13,'15 Oxford St','Paddington','2021','NSW');
+
+
+INSERT INTO restaurant (name, address_id, star) VALUES
+('Szechuan Spice', 1, 4.6),
+('Pasta Palace', 2, 4.2),
+('Tokyo Ramen House', 3, 4.5),
+('Mediterranean Delight', 4, 4.3),
+('The Golden Wok', 5, 4.7),
+('Burger Boulevard', 6, 4.1),
+('Spice of India', 7, 4.4),
+('Le Bistro Francais', 8, 4.8),
+('Thai Orchid', 9, 4.3),
+('Pizza Perfetto', 10, 4.2),
+('Seoul Kitchen', 11, 4.6),
+('The Greek Taverna', 12, 4.4),
+('Dragon Palace', 13, 4.5),
+('Taco Fiesta', 1, 4.0),
+('Sushi Master', 2, 4.7),
+('The Steakhouse', 3, 4.6),
+('Vietnamese Garden', 4, 4.3),
+('Caribbean Breeze', 5, 4.2);
+
+
+INSERT INTO menu_item (restaurant_id, name, price) VALUES
+(1,'Kung Pao Chicken',18.99),
+(1,'Dan Dan Noodles',14.99),
+(2,'Spaghetti Carbonara',17.99),
+(2,'Tiramisu',8.99),
+(3,'Tonkotsu Ramen',16.99),
+(3,'Chicken Katsu Curry',19.99),
+(3,'Gyoza (6pcs)',8.99),
+(3,'Takoyaki',9.99),
+(3,'Miso Ramen',15.99),
+(3,'Tempura Udon',17.99),
+(4,'Greek Salad',12.99),
+(4,'Lamb Souvlaki',21.99),
+(4,'Moussaka',19.99),
+(4,'Hummus Platter',11.99),
+(4,'Falafel Wrap',13.99),
+(4,'Baklava',7.99),
+(5,'Sweet and Sour Pork',17.99),
+(5,'Mongolian Beef',19.99),
+(5,'Fried Rice',11.99),
+(5,'Spring Rolls (4pcs)',7.99),
+(5,'Peking Duck',32.99),
+(5,'Honey Prawns',22.99),
+(6,'Classic Beef Burger',15.99),
+(6,'Chicken Burger',14.99),
+(6,'Veggie Burger',13.99),
+(6,'Loaded Fries',9.99),
+(6,'Onion Rings',6.99),
+(6,'Milkshake',6.99),
+(7,'Butter Chicken',18.99),
+(7,'Lamb Rogan Josh',20.99),
+(7,'Chicken Tikka Masala',18.99),
+(7,'Palak Paneer',16.99),
+(7,'Garlic Naan',4.99),
+(7,'Samosas (3pcs)',7.99),
+(8,'Escargot',16.99),
+(8,'Coq au Vin',28.99),
+(8,'Duck Confit',31.99),
+(8,'French Onion Soup',11.99),
+(8,'Crème Brûlée',9.99),
+(8,'Beef Bourguignon',29.99),
+(9,'Pad Thai',15.99),
+(9,'Green Curry',17.99),
+(9,'Tom Yum Soup',12.99),
+(9,'Massaman Curry',18.99),
+(9,'Mango Sticky Rice',8.99),
+(9,'Thai Basil Chicken',16.99),
+(10,'Margherita Pizza',14.99),
+(10,'Pepperoni Pizza',16.99),
+(10,'Four Cheese Pizza',17.99),
+(10,'Prosciutto Pizza',19.99),
+(10,'Garlic Bread',6.99),
+(10,'Panna Cotta',8.99),
+(11,'Bibimbap',17.99),
+(11,'Korean BBQ Beef',24.99),
+(11,'Kimchi Fried Rice',14.99),
+(11,'Japchae',15.99),
+(11,'Korean Fried Chicken',18.99),
+(11,'Tteokbokki',11.99),
+(12,'Spanakopita',13.99),
+(12,'Grilled Octopus',26.99),
+(12,'Gyros Plate',18.99),
+(12,'Dolmades',10.99),
+(12,'Greek Coffee',4.99),
+(12,'Galaktoboureko',8.99),
+(13,'Mapo Tofu',16.99),
+(13,'Dumplings (8pcs)',12.99),
+(13,'Hot and Sour Soup',9.99),
+(13,'Crispy Duck',28.99),
+(13,'Szechuan Fish',23.99),
+(13,'Egg Fried Rice',10.99),
+(14,'Beef Tacos (3pcs)',13.99),
+(14,'Chicken Quesadilla',14.99),
+(14,'Nachos Supreme',15.99),
+(14,'Burrito Bowl',16.99),
+(14,'Churros',7.99),
+(14,'Guacamole and Chips',9.99),
+(15,'Salmon Nigiri (2pcs)',8.99),
+(15,'California Roll',12.99),
+(15,'Dragon Roll',16.99),
+(15,'Sashimi Platter',28.99),
+(15,'Tempura Roll',13.99),
+(15,'Edamame',5.99),
+(16,'Ribeye Steak 300g',38.99),
+(16,'Porterhouse Steak 400g',45.99),
+(16,'Grilled Lamb Chops',34.99),
+(16,'Caesar Salad',13.99),
+(16,'Mashed Potatoes',7.99),
+(16,'Chocolate Lava Cake',10.99),
+(17,'Pho Bo',14.99),
+(17,'Banh Mi',11.99),
+(17,'Vietnamese Spring Rolls',9.99),
+(17,'Bun Cha',15.99),
+(17,'Lemongrass Chicken',16.99),
+(17,'Vietnamese Iced Coffee',5.99),
+(18,'Jerk Chicken',19.99),
+(18,'Curry Goat',21.99),
+(18,'Rice and Peas',6.99),
+(18,'Plantain',5.99),
+(18,'Saltfish Fritters',8.99),
+(18,'Coconut Cake',7.99);
+
+
+INSERT INTO courier (full_name, vehicle_type) VALUES
+('Miki Zhao','bicycle'),
+('Tom Lee','car'),
+('Jason Chen','scooter'),
+('Emma Wilson','bicycle'),
+('David Kumar','car'),
+('Sofia Martinez','bicycle'),
+('Ryan O''Brien','scooter'),
+('Lily Nguyen','bicycle'),
+('Alex Thompson','car'),
+('Maria Rodriguez','scooter'),
+('Kevin Park','bicycle'),
+('Hannah Smith','car');
+
+
+INSERT INTO order_info (user_id, restaurant_id, courier_id, order_status, order_time) VALUES
+(1,1,1,'delivered', NOW() - INTERVAL '2 days'),
+(1,2,2,'delivered', NOW() - INTERVAL '1 day'),
+(2,1,1,'delivered', NOW() - INTERVAL '3 hours'),
+(3,3,3,'delivered', NOW() - INTERVAL '5 days'),
+(4,5,4,'delivered', NOW() - INTERVAL '4 days'),
+(5,7,5,'delivering', NOW() - INTERVAL '30 minutes'),
+(6,9,6,'preparing', NOW() - INTERVAL '15 minutes'),
+(7,11,7,'delivered', NOW() - INTERVAL '1 day'),
+(8,13,8,'delivered', NOW() - INTERVAL '6 hours'),
+(9,15,9,'delivering', NOW() - INTERVAL '45 minutes'),
+(10,17,10,'delivered', NOW() - INTERVAL '2 days'),
+(11,4,11,'preparing', NOW() - INTERVAL '20 minutes'),
+(12,6,12,'delivered', NOW() - INTERVAL '8 hours');
+
+
+INSERT INTO order_item (order_info_id, menu_item_id, qty, item_price) VALUES
+-- Order 1: user_id=1, restaurant_id=1 (Szechuan Spice)
+(1,1,2,18.99),
+(1,2,1,14.99),
+-- Order 2: user_id=1, restaurant_id=2 (Pasta Palace)
+(2,3,1,17.99),
+(2,4,2,8.99),
+-- Order 3: user_id=2, restaurant_id=1 (Szechuan Spice)
+(3,1,1,18.99),
+(3,2,2,14.99),
+-- Order 4: user_id=3, restaurant_id=3 (Tokyo Ramen House)
+(4,5,1,16.99),
+(4,6,1,19.99),
+(4,7,2,8.99),
+-- Order 5: user_id=4, restaurant_id=5 (The Golden Wok)
+(5,17,2,17.99),
+(5,18,1,19.99),
+(5,19,1,11.99),
+-- Order 6: user_id=5, restaurant_id=7 (Spice of India)
+(6,27,1,18.99),
+(6,29,2,18.99),
+(6,31,3,4.99),
+-- Order 7: user_id=6, restaurant_id=9 (Thai Orchid)
+(7,39,1,15.99),
+(7,40,1,17.99),
+(7,45,1,8.99),
+-- Order 8: user_id=7, restaurant_id=11 (Seoul Kitchen)
+(8,51,2,17.99),
+(8,52,1,24.99),
+(8,55,1,18.99),
+-- Order 9: user_id=8, restaurant_id=13 (Dragon Palace)
+(9,63,1,16.99),
+(9,64,2,12.99),
+(9,65,1,9.99),
+-- Order 10: user_id=9, restaurant_id=15 (Sushi Master)
+(10,75,3,8.99),
+(10,76,2,12.99),
+(10,77,1,16.99),
+(10,80,1,5.99),
+-- Order 11: user_id=10, restaurant_id=17 (Vietnamese Garden)
+(11,87,2,14.99),
+(11,88,1,11.99),
+(11,92,2,5.99),
+-- Order 12: user_id=11, restaurant_id=4 (Mediterranean Delight)
+(12,11,1,12.99),
+(12,12,2,21.99),
+(12,16,1,7.99),
+-- Order 13: user_id=12, restaurant_id=6 (Burger Boulevard)
+(13,23,2,15.99),
+(13,24,1,14.99),
+(13,26,2,9.99);
+
+-- payments
+INSERT INTO payment (order_info_id, method, amount) VALUES
+(1, 'card', 52.97),
+(2, 'apple_pay', 35.97),
+(3, 'card', 48.97),
+(4, 'google_pay', 54.96),
+(5, 'paypal', 67.96),
+(6, 'card', 71.94),
+(7, 'apple_pay', 42.97),
+(8, 'card', 79.96),
+(9, 'google_pay', 52.96),
+(10, 'paypal', 75.93),
+(11, 'card', 53.95),
+(12, 'apple_pay', 64.96),
+(13, 'google_pay', 66.95);
+
+
+select user_id, email from users where phone like '%2';
+select full_name, phone, suburb from users natural join address where suburb in ('Sydney', 'Ultimo') order by user_id;
+select u.full_name, u.phone, a.suburb from users u join address a on u.user_id = a.user_id where suburb in ('Sydney', 'Ultimo') order by u.user_id;
+select r.restaurant_id, r.name, count(m.menu_item_id) as item_count from restaurant r join menu_item m on r.restaurant_id = m.restaurant_id where r.name like 'S%'group by r.restaurant_id, r.name having count(m.menu_item_id) > 5 order by item_count desc;
+select * from menu_item where restaurant_id in (Select restaurant_id from restaurant where star >= 4.8);
+select u1.user_id as user1_id, u1.full_name as user1_name, u2.user_id as user2_id, u2.full_name as user2_name, a1.suburb from users u1, address a1, users u2, address a2 where u1.user_id = a1.user_id and u2.user_id = a2.user_id and a1.suburb = a2.suburb and u1.user_id < u2.user_id order by a1.suburb, u1.user_id;
+
+
+
